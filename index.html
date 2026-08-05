@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Medidas de tendencias central y de dispersión </title>
+<title>Media · Mediana · Moda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -245,12 +245,64 @@
   @media (prefers-reduced-motion: reduce){
     *{ transition: none !important; }
   }
+
+  .reference{
+    margin-top: 56px;
+  }
+
+  .reference-grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .reference-item{
+    display:grid;
+    grid-template-columns: 150px 140px 1fr;
+    gap: 16px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    align-items: baseline;
+  }
+
+  .reference-item:last-child{ border-bottom: none; }
+
+  .reference-item .r-name{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+  }
+
+  .reference-item .r-formula{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--mustard);
+    white-space: nowrap;
+  }
+
+  .reference-item .r-desc{
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 640px){
+    .reference-item{
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+  }
 </style>
 </head>
 <body>
 <main>
   <p class="eyebrow">estadisticas-basicas</p>
-  <h1>Medidas de tendencias centrales y dispersion, en vivo.</h1>
+  <h1>Media, mediana<br>y <span>moda</span>, en vivo.</h1>
   <p class="lede">
     Escribí una lista de números separados por espacio o coma. Cada valor
     aparece como un punto en la recta: los que se repiten se apilan, y ahí
@@ -302,6 +354,47 @@
     <div class="card">
       <p class="label">Coef. variación</p>
       <p class="value small" id="val-cv">—</p>
+    </div>
+  </div>
+
+  <div class="reference">
+    <p class="section-label">Fórmulas y definiciones</p>
+    <div class="reference-grid">
+      <div class="reference-item">
+        <p class="r-name">Media</p>
+        <p class="r-formula">x̄ = Σxᵢ / n</p>
+        <p class="r-desc">El promedio aritmético: la suma de todos los valores dividida entre la cantidad de datos. Es el "centro de masa" de la distribución.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Mediana</p>
+        <p class="r-formula">valor central</p>
+        <p class="r-desc">El valor que queda justo en el medio al ordenar los datos. Si hay una cantidad par de datos, es el promedio de los dos centrales. No se ve afectada por valores extremos.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Moda</p>
+        <p class="r-formula">valor más frecuente</p>
+        <p class="r-desc">El valor (o valores) que más se repite en el conjunto de datos. Puede no existir si todos los valores son distintos, o haber varias (multimodal).</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Rango</p>
+        <p class="r-formula">máximo − mínimo</p>
+        <p class="r-desc">La diferencia entre el valor más alto y el más bajo. Es la medida de dispersión más simple, pero muy sensible a valores atípicos.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Varianza (s²)</p>
+        <p class="r-formula">s² = Σ(xᵢ − x̄)² / (n − 1)</p>
+        <p class="r-desc">El promedio de las distancias al cuadrado entre cada dato y la media. Cuanto mayor es, más dispersos están los datos. Se expresa en unidades al cuadrado, por lo que es difícil de interpretar directamente.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Desv. estándar (s)</p>
+        <p class="r-formula">s = √s²</p>
+        <p class="r-desc">La raíz cuadrada de la varianza. Vuelve a expresar la dispersión en las mismas unidades que el dato original, lo que la hace más fácil de interpretar.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Coef. de variación</p>
+        <p class="r-formula">CV = (s / x̄) × 100</p>
+        <p class="r-desc">La desviación estándar expresada como porcentaje de la media. Permite comparar la dispersión entre conjuntos de datos con escalas o unidades distintas.</p>
+      </div>
     </div>
   </div>
 
