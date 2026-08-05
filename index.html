@@ -125,6 +125,7 @@
     border-radius: 6px;
     padding: 28px 24px 20px;
     margin-bottom: 32px;
+    position: relative;
   }
 
   .plot-label{
@@ -137,13 +138,42 @@
 
   svg{ display:block; width:100%; height:auto; overflow: visible; }
 
-  .dot{ fill: var(--ink); }
+  .dot{ fill: var(--ink); cursor: pointer; transition: r .1s ease; }
   .dot.mode{ fill: var(--mustard); }
+  .dot:hover{ r: 10; }
   .axis-line{ stroke: var(--line); stroke-width: 1.5; }
   .tick{ font-family:'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-soft); }
   .median-line{ stroke: var(--mustard); stroke-width: 1.5; stroke-dasharray: 3 3; }
   .mean-marker{ fill: var(--ink); }
   .legend{ font-family:'Inter', sans-serif; font-size: 12px; fill: var(--ink-soft); }
+
+  .tooltip{
+    position: absolute;
+    pointer-events: none;
+    background: var(--slate);
+    color: #fff;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    transform: translate(-50%, -100%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity .1s ease;
+    z-index: 10;
+  }
+
+  .tooltip::after{
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--slate);
+  }
+
+  .tooltip.visible{ opacity: 1; }
 
   .results{
     display:grid;
@@ -203,7 +233,7 @@
   <p class="lede">
     Escribí una lista de números separados por espacio o coma. Cada valor
     aparece como un punto en la recta: los que se repiten se apilan, y ahí
-    es donde vive la moda.
+    es donde vive la moda. Pasá el cursor sobre un punto para ver su valor.
   </p>
 
   <div class="input-row">
@@ -213,9 +243,10 @@
   <p class="hint">Ejemplo: 4, 8, 15, 16, 23, 8</p>
   <p class="error" id="error-msg">Ingresá solo números, separados por espacio o coma.</p>
 
-  <div class="plot-wrap">
+  <div class="plot-wrap" id="plot-wrap">
     <p class="plot-label">DISTRIBUCIÓN</p>
     <svg id="plot" viewBox="0 0 640 160" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="tooltip" id="tooltip"></div>
   </div>
 
   <div class="results">
@@ -326,10 +357,33 @@
       const x = escX(p.v);
       const y = baseY - radio - (p.nivel * espacioVertical);
       const esModa = moda.includes(p.v);
-      svgContent += `<circle class="dot${esModa ? ' mode' : ''}" cx="${x}" cy="${y}" r="${radio}"></circle>`;
+      svgContent += `<circle class="dot${esModa ? ' mode' : ''}" cx="${x}" cy="${y}" r="${radio}" data-valor="${p.v}"></circle>`;
     });
 
     svg.innerHTML = svgContent;
+
+    // eventos de tooltip para cada punto
+    const tooltip = document.getElementById('tooltip');
+    const wrap = document.getElementById('plot-wrap');
+
+    svg.querySelectorAll('.dot').forEach(dot => {
+      dot.addEventListener('mouseenter', () => {
+        tooltip.textContent = dot.getAttribute('data-valor');
+        tooltip.classList.add('visible');
+      });
+
+      dot.addEventListener('mousemove', (e) => {
+        const wrapRect = wrap.getBoundingClientRect();
+        const x = e.clientX - wrapRect.left;
+        const y = e.clientY - wrapRect.top;
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y - 12}px`;
+      });
+
+      dot.addEventListener('mouseleave', () => {
+        tooltip.classList.remove('visible');
+      });
+    });
   }
 
   function actualizar(){
