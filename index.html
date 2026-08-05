@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media · Mediana · Moda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #f7f8f4;
+    --grid: #e2e6dd;
+    --ink: #2b3a67;
+    --ink-soft: #5a6690;
+    --slate: #1d2430;
+    --mustard: #d8a448;
+    --line: #c9cdc2;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 100% 28px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 28px 100%,
+      var(--paper);
+    color: var(--slate);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    padding: 64px 24px 96px;
+  }
+
+  main{
+    width:100%;
+    max-width: 720px;
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1.05;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+
+  h1 span{ color: var(--mustard); }
+
+  p.lede{
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0 0 40px;
+  }
+
+  .input-row{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"]{
+    flex:1;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 15px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 4px;
+    color: var(--slate);
+    outline: none;
+    transition: border-color .15s ease;
+  }
+
+  input[type="text"]:focus{
+    border-color: var(--ink);
+  }
+
+  button{
+    font-family:'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px 22px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+
+  button:hover{ background: #1f2b52; }
+  button:focus-visible{ outline: 2px solid var(--mustard); outline-offset: 2px; }
+
+  .hint{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 48px;
+  }
+
+  .error{
+    font-size: 14px;
+    color: #a33b2e;
+    margin: -32px 0 40px;
+    display:none;
+  }
+
+  .plot-wrap{
+    background:#fff;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    padding: 28px 24px 20px;
+    margin-bottom: 32px;
+  }
+
+  .plot-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    margin: 0 0 6px;
+  }
+
+  svg{ display:block; width:100%; height:auto; overflow: visible; }
+
+  .dot{ fill: var(--ink); }
+  .dot.mode{ fill: var(--mustard); }
+  .axis-line{ stroke: var(--line); stroke-width: 1.5; }
+  .tick{ font-family:'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-soft); }
+  .median-line{ stroke: var(--mustard); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .mean-marker{ fill: var(--ink); }
+  .legend{ font-family:'Inter', sans-serif; font-size: 12px; fill: var(--ink-soft); }
+
+  .results{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .card{
+    background:#fff;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    padding: 18px 16px;
+  }
+
+  .card .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+
+  .card .value{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: 28px;
+    color: var(--ink);
+    margin: 0;
+    word-break: break-word;
+  }
+
+  .card.mode .value{ color: var(--mustard); }
+
+  footer{
+    margin-top: 56px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  footer a{ color: var(--ink); }
+
+  @media (max-width: 520px){
+    .results{ grid-template-columns: 1fr; }
+    .input-row{ flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">estadisticas-basicas</p>
+  <h1>Media, mediana<br>y <span>moda</span>, en vivo.</h1>
+  <p class="lede">
+    Escribí una lista de números separados por espacio o coma. Cada valor
+    aparece como un punto en la recta: los que se repiten se apilan, y ahí
+    es donde vive la moda.
+  </p>
+
+  <div class="input-row">
+    <input type="text" id="input-datos" value="4, 8, 15, 16, 23, 8" autocomplete="off" spellcheck="false">
+    <button id="btn-calcular">Calcular</button>
+  </div>
+  <p class="hint">Ejemplo: 4, 8, 15, 16, 23, 8</p>
+  <p class="error" id="error-msg">Ingresá solo números, separados por espacio o coma.</p>
+
+  <div class="plot-wrap">
+    <p class="plot-label">DISTRIBUCIÓN</p>
+    <svg id="plot" viewBox="0 0 640 160" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+
+  <div class="results">
+    <div class="card">
+      <p class="label">Media</p>
+      <p class="value" id="val-media">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Mediana</p>
+      <p class="value" id="val-mediana">—</p>
+    </div>
+    <div class="card mode">
+      <p class="label">Moda</p>
+      <p class="value" id="val-moda">—</p>
+    </div>
+  </div>
+
+  <footer>
+    Demo del proyecto <a href="https://github.com/efrabuilder/estadisticas-basicas" target="_blank" rel="noopener">estadisticas-basicas</a> —
+    la misma lógica vive en <code>stats.py</code> para usar desde la línea de comandos.<br>
+    © 2026 · Diseñado y desarrollado por Efraín Sebastián Rojas Artavia
+  </footer>
+</main>
+
+<script>
+  function calcularMedia(datos){
+    return datos.reduce((a,b) => a+b, 0) / datos.length;
+  }
+
+  function calcularMediana(datos){
+    const ordenados = [...datos].sort((a,b) => a-b);
+    const n = ordenados.length;
+    const mitad = Math.floor(n/2);
+    if(n % 2 === 0){
+      return (ordenados[mitad-1] + ordenados[mitad]) / 2;
+    }
+    return ordenados[mitad];
+  }
+
+  function calcularModa(datos){
+    const conteo = new Map();
+    datos.forEach(d => conteo.set(d, (conteo.get(d) || 0) + 1));
+    const frecuenciaMax = Math.max(...conteo.values());
+    if(frecuenciaMax === 1) return [];
+    return [...conteo.entries()]
+      .filter(([_, freq]) => freq === frecuenciaMax)
+      .map(([valor]) => valor)
+      .sort((a,b) => a-b);
+  }
+
+  function parseInput(texto){
+    const limpio = texto.replace(/,/g, ' ').trim();
+    if(!limpio) return null;
+    const partes = limpio.split(/\s+/);
+    const numeros = partes.map(Number);
+    if(numeros.some(n => Number.isNaN(n))) return null;
+    return numeros;
+  }
+
+  function dibujarPlot(datos, media, mediana, moda){
+    const svg = document.getElementById('plot');
+    const W = 640, H = 160;
+    const padX = 40;
+    const min = Math.min(...datos);
+    const max = Math.max(...datos);
+    const rango = max - min || 1;
+    const margen = rango * 0.15;
+    const escX = v => padX + ((v - (min - margen)) / (rango + margen*2)) * (W - padX*2);
+
+    const conteoPos = new Map();
+    const puntos = datos.map(v => {
+      const key = v;
+      const nivel = conteoPos.get(key) || 0;
+      conteoPos.set(key, nivel + 1);
+      return { v, nivel };
+    });
+
+    const baseY = 110;
+    const radio = 8;
+    const espacioVertical = 18;
+
+    let svgContent = '';
+
+    // eje
+    svgContent += `<line class="axis-line" x1="${padX}" y1="${baseY}" x2="${W-padX}" y2="${baseY}"></line>`;
+
+    // marcas del eje
+    const numTicks = 5;
+    for(let i=0; i<=numTicks; i++){
+      const val = (min - margen) + (i/numTicks) * (rango + margen*2);
+      const x = escX(val);
+      svgContent += `<line class="axis-line" x1="${x}" y1="${baseY}" x2="${x}" y2="${baseY+6}"></line>`;
+      svgContent += `<text class="tick" x="${x}" y="${baseY+20}" text-anchor="middle">${val.toFixed(1)}</text>`;
+    }
+
+    // línea de mediana
+    const xMediana = escX(mediana);
+    svgContent += `<line class="median-line" x1="${xMediana}" y1="20" x2="${xMediana}" y2="${baseY}"></line>`;
+    svgContent += `<text class="legend" x="${xMediana}" y="14" text-anchor="middle">mediana</text>`;
+
+    // marcador de media (triángulo)
+    const xMedia = escX(media);
+    svgContent += `<path class="mean-marker" d="M ${xMedia-6} 30 L ${xMedia+6} 30 L ${xMedia} 40 Z"></path>`;
+    svgContent += `<text class="legend" x="${xMedia}" y="24" text-anchor="middle">media</text>`;
+
+    // puntos apilados
+    puntos.forEach(p => {
+      const x = escX(p.v);
+      const y = baseY - radio - (p.nivel * espacioVertical);
+      const esModa = moda.includes(p.v);
+      svgContent += `<circle class="dot${esModa ? ' mode' : ''}" cx="${x}" cy="${y}" r="${radio}"></circle>`;
+    });
+
+    svg.innerHTML = svgContent;
+  }
+
+  function actualizar(){
+    const texto = document.getElementById('input-datos').value;
+    const errorMsg = document.getElementById('error-msg');
+    const datos = parseInput(texto);
+
+    if(!datos){
+      errorMsg.style.display = 'block';
+      return;
+    }
+    errorMsg.style.display = 'none';
+
+    const media = calcularMedia(datos);
+    const mediana = calcularMediana(datos);
+    const moda = calcularModa(datos);
+
+    document.getElementById('val-media').textContent = media.toFixed(4).replace(/\.?0+$/, '') || media.toFixed(2);
+    document.getElementById('val-mediana').textContent = mediana.toFixed(4).replace(/\.?0+$/, '') || mediana.toFixed(2);
+    document.getElementById('val-moda').textContent = moda.length ? moda.join(', ') : 'no hay';
+
+    dibujarPlot(datos, media, mediana, moda);
+  }
+
+  document.getElementById('btn-calcular').addEventListener('click', actualizar);
+  document.getElementById('input-datos').addEventListener('keydown', e => {
+    if(e.key === 'Enter') actualizar();
+  });
+
+  actualizar();
+</script>
+</body>
+</html>
