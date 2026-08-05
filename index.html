@@ -208,6 +208,27 @@
 
   .card.mode .value{ color: var(--mustard); }
 
+  .section-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 36px 0 12px;
+  }
+
+  .results-dispersion{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .card .value.small{ font-size: 22px; }
+
+  @media (max-width: 640px){
+    .results-dispersion{ grid-template-columns: repeat(2, 1fr); }
+  }
+
   footer{
     margin-top: 56px;
     font-size: 13px;
@@ -264,6 +285,26 @@
     </div>
   </div>
 
+  <p class="section-label">Medidas de dispersión</p>
+  <div class="results-dispersion">
+    <div class="card">
+      <p class="label">Rango</p>
+      <p class="value small" id="val-rango">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Varianza (s²)</p>
+      <p class="value small" id="val-varianza">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Desv. estándar (s)</p>
+      <p class="value small" id="val-desviacion">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Coef. variación</p>
+      <p class="value small" id="val-cv">—</p>
+    </div>
+  </div>
+
   <footer>
     Demo del proyecto <a href="https://github.com/efrabuilder/estadisticas-basicas" target="_blank" rel="noopener">estadisticas-basicas</a> —
     la misma lógica vive en <code>stats.py</code> para usar desde la línea de comandos.<br>
@@ -295,6 +336,32 @@
       .filter(([_, freq]) => freq === frecuenciaMax)
       .map(([valor]) => valor)
       .sort((a,b) => a-b);
+  }
+
+  function calcularRango(datos){
+    return Math.max(...datos) - Math.min(...datos);
+  }
+
+  // Varianza muestral: s² = Σ(xi - x̄)² / (n - 1)
+  function calcularVarianza(datos, media){
+    const n = datos.length;
+    if(n < 2) return null;
+    const sumaCuadrados = datos.reduce((acc, x) => acc + Math.pow(x - media, 2), 0);
+    return sumaCuadrados / (n - 1);
+  }
+
+  function calcularDesviacion(varianza){
+    if(varianza === null) return null;
+    return Math.sqrt(varianza);
+  }
+
+  function calcularCV(desviacion, media){
+    if(desviacion === null || media === 0) return null;
+    return (desviacion / media) * 100;
+  }
+
+  function formatearNum(n){
+    return n.toFixed(4).replace(/\.?0+$/, '') || n.toFixed(2);
   }
 
   function parseInput(texto){
@@ -400,10 +467,19 @@
     const media = calcularMedia(datos);
     const mediana = calcularMediana(datos);
     const moda = calcularModa(datos);
+    const rango = calcularRango(datos);
+    const varianza = calcularVarianza(datos, media);
+    const desviacion = calcularDesviacion(varianza);
+    const cv = calcularCV(desviacion, media);
 
-    document.getElementById('val-media').textContent = media.toFixed(4).replace(/\.?0+$/, '') || media.toFixed(2);
-    document.getElementById('val-mediana').textContent = mediana.toFixed(4).replace(/\.?0+$/, '') || mediana.toFixed(2);
+    document.getElementById('val-media').textContent = formatearNum(media);
+    document.getElementById('val-mediana').textContent = formatearNum(mediana);
     document.getElementById('val-moda').textContent = moda.length ? moda.join(', ') : 'no hay';
+
+    document.getElementById('val-rango').textContent = formatearNum(rango);
+    document.getElementById('val-varianza').textContent = varianza === null ? 'n/a' : formatearNum(varianza);
+    document.getElementById('val-desviacion').textContent = desviacion === null ? 'n/a' : formatearNum(desviacion);
+    document.getElementById('val-cv').textContent = cv === null ? 'n/a' : formatearNum(cv) + '%';
 
     dibujarPlot(datos, media, mediana, moda);
   }
