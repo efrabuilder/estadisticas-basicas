@@ -231,17 +231,13 @@
     margin: 36px 0 12px;
   }
 
-  .results-dispersion{
+  .stat-grid{
     display:grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 12px;
   }
 
   .card .value.small{ font-size: 22px; }
-
-  @media (max-width: 640px){
-    .results-dispersion{ grid-template-columns: repeat(2, 1fr); }
-  }
 
   footer{
     margin-top: 56px;
@@ -358,8 +354,28 @@
     </div>
   </div>
 
+  <p class="section-label">Resumen de datos</p>
+  <div class="stat-grid">
+    <div class="card">
+      <p class="label">Cuenta</p>
+      <p class="value small" id="val-cuenta">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Suma</p>
+      <p class="value small" id="val-suma">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Mínimo</p>
+      <p class="value small" id="val-minimo">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Máximo</p>
+      <p class="value small" id="val-maximo">—</p>
+    </div>
+  </div>
+
   <p class="section-label">Medidas de dispersión</p>
-  <div class="results-dispersion">
+  <div class="stat-grid">
     <div class="card">
       <p class="label">Rango</p>
       <p class="value small" id="val-rango">—</p>
@@ -373,8 +389,24 @@
       <p class="value small" id="val-desviacion">—</p>
     </div>
     <div class="card">
+      <p class="label">Error típico</p>
+      <p class="value small" id="val-errortipico">—</p>
+    </div>
+    <div class="card">
       <p class="label">Coef. variación</p>
       <p class="value small" id="val-cv">—</p>
+    </div>
+  </div>
+
+  <p class="section-label">Medidas de forma</p>
+  <div class="stat-grid">
+    <div class="card">
+      <p class="label">Coef. de asimetría</p>
+      <p class="value small" id="val-asimetria">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Curtosis</p>
+      <p class="value small" id="val-curtosis">—</p>
     </div>
   </div>
 
@@ -397,6 +429,26 @@
         <p class="r-desc">El valor (o valores) que más se repite en el conjunto de datos. Puede no existir si todos los valores son distintos, o haber varias (multimodal).</p>
       </div>
       <div class="reference-item">
+        <p class="r-name">Cuenta</p>
+        <p class="r-formula">n</p>
+        <p class="r-desc">La cantidad total de datos ingresados. Es la base de casi todas las demás fórmulas de esta tabla.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Suma</p>
+        <p class="r-formula">Σxᵢ</p>
+        <p class="r-desc">La suma de todos los valores del conjunto de datos, sin dividir entre nada. Es el numerador de la media.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Mínimo</p>
+        <p class="r-formula">valor más bajo</p>
+        <p class="r-desc">El menor valor presente en el conjunto de datos.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Máximo</p>
+        <p class="r-formula">valor más alto</p>
+        <p class="r-desc">El mayor valor presente en el conjunto de datos.</p>
+      </div>
+      <div class="reference-item">
         <p class="r-name">Rango</p>
         <p class="r-formula">máximo − mínimo</p>
         <p class="r-desc">La diferencia entre el valor más alto y el más bajo. Es la medida de dispersión más simple, pero muy sensible a valores atípicos.</p>
@@ -412,9 +464,24 @@
         <p class="r-desc">La raíz cuadrada de la varianza. Vuelve a expresar la dispersión en las mismas unidades que el dato original, lo que la hace más fácil de interpretar.</p>
       </div>
       <div class="reference-item">
+        <p class="r-name">Error típico</p>
+        <p class="r-formula">EE = s / √n</p>
+        <p class="r-desc">Estima qué tan lejos podría estar la media de la muestra respecto a la media real de la población. Disminuye a medida que aumenta el tamaño de la muestra.</p>
+      </div>
+      <div class="reference-item">
         <p class="r-name">Coef. de variación</p>
         <p class="r-formula">CV = (s / x̄) × 100</p>
         <p class="r-desc">La desviación estándar expresada como porcentaje de la media. Permite comparar la dispersión entre conjuntos de datos con escalas o unidades distintas.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Coef. de asimetría</p>
+        <p class="r-formula">g₁ = [n / (n−1)(n−2)] Σ((xᵢ−x̄)/s)³</p>
+        <p class="r-desc">Mide si la distribución se inclina hacia un lado. Positivo indica cola larga hacia valores altos; negativo, hacia valores bajos; cercano a 0 es simétrica.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Curtosis</p>
+        <p class="r-formula">g₂ = [n(n+1)/(n−1)(n−2)(n−3)] Σ((xᵢ−x̄)/s)⁴ − 3(n−1)²/[(n−2)(n−3)]</p>
+        <p class="r-desc">Mide qué tan "puntiaguda" o "achatada" es la distribución respecto a una normal. Positivo indica colas más pesadas y pico más agudo; negativo, una forma más plana.</p>
       </div>
     </div>
   </div>
@@ -459,6 +526,10 @@
     return Math.max(...datos) - Math.min(...datos);
   }
 
+  function calcularSuma(datos){
+    return datos.reduce((a,b) => a+b, 0);
+  }
+
   // Varianza muestral: s² = Σ(xi - x̄)² / (n - 1)
   function calcularVarianza(datos, media){
     const n = datos.length;
@@ -475,6 +546,29 @@
   function calcularCV(desviacion, media){
     if(desviacion === null || media === 0) return null;
     return (desviacion / media) * 100;
+  }
+
+  function calcularErrorTipico(desviacion, n){
+    if(desviacion === null) return null;
+    return desviacion / Math.sqrt(n);
+  }
+
+  // Coeficiente de asimetría muestral (misma fórmula que SKEW en Excel)
+  function calcularAsimetria(datos, media, desviacion){
+    const n = datos.length;
+    if(n < 3 || desviacion === null || desviacion === 0) return null;
+    const suma = datos.reduce((acc, x) => acc + Math.pow((x - media) / desviacion, 3), 0);
+    return (n / ((n - 1) * (n - 2))) * suma;
+  }
+
+  // Curtosis muestral (exceso de curtosis, misma fórmula que KURT en Excel)
+  function calcularCurtosis(datos, media, desviacion){
+    const n = datos.length;
+    if(n < 4 || desviacion === null || desviacion === 0) return null;
+    const suma = datos.reduce((acc, x) => acc + Math.pow((x - media) / desviacion, 4), 0);
+    const termino1 = (n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3));
+    const termino2 = (3 * Math.pow(n - 1, 2)) / ((n - 2) * (n - 3));
+    return termino1 * suma - termino2;
   }
 
   function formatearNum(n){
@@ -658,15 +752,30 @@
     const varianza = calcularVarianza(datos, media);
     const desviacion = calcularDesviacion(varianza);
     const cv = calcularCV(desviacion, media);
+    const errorTipico = calcularErrorTipico(desviacion, datos.length);
+    const asimetria = calcularAsimetria(datos, media, desviacion);
+    const curtosis = calcularCurtosis(datos, media, desviacion);
+    const suma = calcularSuma(datos);
+    const minimo = Math.min(...datos);
+    const maximo = Math.max(...datos);
 
     document.getElementById('val-media').textContent = formatearNum(media);
     document.getElementById('val-mediana').textContent = formatearNum(mediana);
     document.getElementById('val-moda').textContent = moda.length ? moda.join(', ') : 'no hay';
 
+    document.getElementById('val-cuenta').textContent = datos.length;
+    document.getElementById('val-suma').textContent = formatearNum(suma);
+    document.getElementById('val-minimo').textContent = formatearNum(minimo);
+    document.getElementById('val-maximo').textContent = formatearNum(maximo);
+
     document.getElementById('val-rango').textContent = formatearNum(rango);
     document.getElementById('val-varianza').textContent = varianza === null ? 'n/a' : formatearNum(varianza);
     document.getElementById('val-desviacion').textContent = desviacion === null ? 'n/a' : formatearNum(desviacion);
+    document.getElementById('val-errortipico').textContent = errorTipico === null ? 'n/a' : formatearNum(errorTipico);
     document.getElementById('val-cv').textContent = cv === null ? 'n/a' : formatearNum(cv) + '%';
+
+    document.getElementById('val-asimetria').textContent = asimetria === null ? 'n/a' : formatearNum(asimetria);
+    document.getElementById('val-curtosis').textContent = curtosis === null ? 'n/a' : formatearNum(curtosis);
 
     dibujarPlot(datos, media, mediana, moda);
   }
