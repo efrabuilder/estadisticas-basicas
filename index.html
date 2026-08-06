@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medidas de tendencias central y de dispersión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #f7f8f4;
+    --grid: #e2e6dd;
+    --ink: #2b3a67;
+    --ink-soft: #5a6690;
+    --slate: #1d2430;
+    --mustard: #d8a448;
+    --line: #c9cdc2;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 100% 28px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 28px 100%,
+      var(--paper);
+    color: var(--slate);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    padding: 64px 24px 96px;
+  }
+
+  main{
+    width:100%;
+    max-width: 720px;
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    line-height: 1.05;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+
+  h1 span{ color: var(--mustard); }
+
+  p.lede{
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0 0 40px;
+  }
+
+  .input-row{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"]{
+    flex:1;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 15px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 4px;
+    color: var(--slate);
+    outline: none;
+    transition: border-color .15s ease;
+    min-width: 0;
+  }
+
+  input[type="text"]:focus{
+    border-color: var(--ink);
+  }
+
+  button{
+    font-family:'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px 22px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .15s ease;
+    flex-shrink: 0;
+  }
+
+  button:hover{ background: #1f2b52; }
+  button:focus-visible{ outline: 2px solid var(--mustard); outline-offset: 2px; }
+
+  .hint{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+
+  .n-count{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 0 0 40px;
+  }
+
+  .error{
+    font-size: 14px;
+    color: #a33b2e;
+    margin: -32px 0 40px;
+    display:none;
+  }
+
+  .plot-wrap{
+    background:#fff;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    padding: 28px 24px 20px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .plot-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    margin: 0 0 6px;
+  }
+
+  svg{ display:block; width:100%; height:auto; overflow: visible; }
+
+  .dot{ fill: var(--ink); cursor: pointer; transition: r .1s ease; }
+  .dot.mode{ fill: var(--mustard); }
+  .dot:hover{ r: 10; }
+
+  .bar{ fill: var(--ink); cursor: pointer; transition: fill .1s ease, opacity .1s ease; }
+  .bar.mode-bin{ fill: var(--mustard); }
+  .bar:hover{ opacity: 0.75; }
+
+  .axis-line{ stroke: var(--line); stroke-width: 1.5; }
+  .tick{ font-family:'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-soft); }
+  .median-line{ stroke: var(--mustard); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .mean-marker{ fill: var(--ink); }
+  .legend{ font-family:'Inter', sans-serif; font-size: 12px; fill: var(--ink-soft); }
+
+  .tooltip{
+    position: absolute;
+    pointer-events: none;
+    background: var(--slate);
+    color: #fff;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    transform: translate(-50%, -100%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity .1s ease;
+    z-index: 10;
+  }
+
+  .tooltip::after{
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--slate);
+  }
+
+  .tooltip.visible{ opacity: 1; }
+
+  .results{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .card{
+    background:#fff;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    padding: 18px 16px;
+  }
+
+  .card .label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+
+  .card .value{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: 28px;
+    color: var(--ink);
+    margin: 0;
+    word-break: break-word;
+  }
+
+  .card.mode .value{ color: var(--mustard); }
+
+  .section-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 36px 0 12px;
+  }
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+  }
+
+  .card .value.small{ font-size: 22px; }
+
+  footer{
+    margin-top: 56px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  footer a{ color: var(--ink); }
+
+  @media (max-width: 520px){
+    .results{ grid-template-columns: 1fr; }
+    .input-row{ flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; }
+  }
+
+  .reference{
+    margin-top: 56px;
+  }
+
+  .reference-grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .reference-item{
+    display:grid;
+    grid-template-columns: 130px 190px 1fr;
+    column-gap: 18px;
+    row-gap: 4px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    align-items: start;
+  }
+
+  .reference-item:last-child{ border-bottom: none; }
+
+  .reference-item .r-name{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    padding-top: 1px;
+  }
+
+  .reference-item .r-formula{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--mustard);
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .reference-item .r-desc{
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 640px){
+    .reference-item{
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+  }
+
+  .card.interactiva{
+    cursor: pointer;
+    transition: border-color .12s ease, background .12s ease;
+  }
+
+  .card.interactiva:hover,
+  .card.interactiva.activa{
+    border-color: var(--ink);
+    background: #fbfbf8;
+  }
+
+  .card.interactiva::after{
+    content: 'ƒ(x)';
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--mustard);
+    opacity: 0;
+    transition: opacity .12s ease;
+  }
+
+  .card.interactiva{ position: relative; }
+
+  .card.interactiva:hover::after,
+  .card.interactiva.activa::after{ opacity: 1; }
+
+  .hover-panel{
+    position: fixed;
+    z-index: 60;
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    max-width: 380px;
+    width: max-content;
+    padding: 20px 22px;
+    box-shadow: 0 12px 28px rgba(29,36,48,0.2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition: opacity .12s ease, transform .12s ease;
+    pointer-events: none;
+  }
+
+  .hover-panel.visible{
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .modal .modal-eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
+
+  .modal h2{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    color: var(--ink);
+    margin: 0 0 14px;
+  }
+
+  .modal .modal-formula{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--mustard);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 10px 12px;
+    margin: 0 0 16px;
+    word-break: break-word;
+  }
+
+  .modal ol.modal-steps{
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .modal ol.modal-steps li{
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--slate);
+  }
+
+  @media (max-width: 640px){
+    .card.interactiva::after{ content: none; }
+    .hover-panel{ max-width: calc(100vw - 32px); }
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">estadisticas-basicas</p>
+  <h1>Medidas de tendencias central y de dispersión, en vivo.</h1>
+  <p class="lede">
+    Escribí una lista de números separados por espacio o coma. Con pocos
+    datos, cada valor aparece como un punto en la recta y los que se
+    repiten se apilan, ahí es donde vive la moda. Con muchos datos, la
+    vista cambia automáticamente a un histograma agrupado por rangos.
+  </p>
+
+  <div class="input-row">
+    <input type="text" id="input-datos" value="4, 8, 15, 16, 23, 8" autocomplete="off" spellcheck="false">
+    <button id="btn-calcular">Calcular</button>
+  </div>
+  <p class="hint">Ejemplo: 4, 8, 15, 16, 23, 8</p>
+  <p class="n-count" id="n-count"></p>
+  <p class="error" id="error-msg">Ingresá solo números, separados por espacio o coma.</p>
+
+  <div class="plot-wrap" id="plot-wrap">
+    <p class="plot-label" id="plot-label">DISTRIBUCIÓN</p>
+    <svg id="plot" viewBox="0 0 640 200" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div class="results">
+    <div class="card">
+      <p class="label">Media</p>
+      <p class="value" id="val-media">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Mediana</p>
+      <p class="value" id="val-mediana">—</p>
+    </div>
+    <div class="card mode">
+      <p class="label">Moda</p>
+      <p class="value" id="val-moda">—</p>
+    </div>
+  </div>
+
+  <p class="section-label">Resumen de datos</p>
+  <div class="stat-grid">
+    <div class="card">
+      <p class="label">Cuenta</p>
+      <p class="value small" id="val-cuenta">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Suma</p>
+      <p class="value small" id="val-suma">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Mínimo</p>
+      <p class="value small" id="val-minimo">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Máximo</p>
+      <p class="value small" id="val-maximo">—</p>
+    </div>
+  </div>
+
+  <p class="section-label">Medidas de dispersión</p>
+  <div class="stat-grid">
+    <div class="card">
+      <p class="label">Rango</p>
+      <p class="value small" id="val-rango">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Varianza (s²)</p>
+      <p class="value small" id="val-varianza">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Desv. estándar (s)</p>
+      <p class="value small" id="val-desviacion">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Error típico</p>
+      <p class="value small" id="val-errortipico">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Coef. variación</p>
+      <p class="value small" id="val-cv">—</p>
+    </div>
+  </div>
+
+  <p class="section-label">Medidas de forma</p>
+  <div class="stat-grid">
+    <div class="card">
+      <p class="label">Coef. de asimetría</p>
+      <p class="value small" id="val-asimetria">—</p>
+    </div>
+    <div class="card">
+      <p class="label">Curtosis</p>
+      <p class="value small" id="val-curtosis">—</p>
+    </div>
+  </div>
+
+  <div class="reference">
+    <p class="section-label">Fórmulas y definiciones</p>
+    <div class="reference-grid">
+      <div class="reference-item">
+        <p class="r-name">Media</p>
+        <p class="r-formula">x̄ = Σxᵢ / n</p>
+        <p class="r-desc">El promedio aritmético: la suma de todos los valores dividida entre la cantidad de datos. Es el "centro de masa" de la distribución.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Mediana</p>
+        <p class="r-formula">valor central</p>
+        <p class="r-desc">El valor que queda justo en el medio al ordenar los datos. Si hay una cantidad par de datos, es el promedio de los dos centrales. No se ve afectada por valores extremos.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Moda</p>
+        <p class="r-formula">valor más frecuente</p>
+        <p class="r-desc">El valor (o valores) que más se repite en el conjunto de datos. Puede no existir si todos los valores son distintos, o haber varias (multimodal).</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Cuenta</p>
+        <p class="r-formula">n</p>
+        <p class="r-desc">La cantidad total de datos ingresados. Es la base de casi todas las demás fórmulas de esta tabla.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Suma</p>
+        <p class="r-formula">Σxᵢ</p>
+        <p class="r-desc">La suma de todos los valores del conjunto de datos, sin dividir entre nada. Es el numerador de la media.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Mínimo</p>
+        <p class="r-formula">valor más bajo</p>
+        <p class="r-desc">El menor valor presente en el conjunto de datos.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Máximo</p>
+        <p class="r-formula">valor más alto</p>
+        <p class="r-desc">El mayor valor presente en el conjunto de datos.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Rango</p>
+        <p class="r-formula">máximo − mínimo</p>
+        <p class="r-desc">La diferencia entre el valor más alto y el más bajo. Es la medida de dispersión más simple, pero muy sensible a valores atípicos.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Varianza (s²)</p>
+        <p class="r-formula">s² = Σ(xᵢ − x̄)² / (n − 1)</p>
+        <p class="r-desc">El promedio de las distancias al cuadrado entre cada dato y la media. Cuanto mayor es, más dispersos están los datos. Se expresa en unidades al cuadrado, por lo que es difícil de interpretar directamente.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Desv. estándar (s)</p>
+        <p class="r-formula">s = √s²</p>
+        <p class="r-desc">La raíz cuadrada de la varianza. Vuelve a expresar la dispersión en las mismas unidades que el dato original, lo que la hace más fácil de interpretar.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Error típico</p>
+        <p class="r-formula">EE = s / √n</p>
+        <p class="r-desc">Estima qué tan lejos podría estar la media de la muestra respecto a la media real de la población. Disminuye a medida que aumenta el tamaño de la muestra.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Coef. de variación</p>
+        <p class="r-formula">CV = (s / x̄) × 100</p>
+        <p class="r-desc">La desviación estándar expresada como porcentaje de la media. Permite comparar la dispersión entre conjuntos de datos con escalas o unidades distintas.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Coef. de asimetría</p>
+        <p class="r-formula">g₁ = [n / (n−1)(n−2)] Σ((xᵢ−x̄)/s)³</p>
+        <p class="r-desc">Mide si la distribución se inclina hacia un lado. Positivo indica cola larga hacia valores altos; negativo, hacia valores bajos; cercano a 0 es simétrica.</p>
+      </div>
+      <div class="reference-item">
+        <p class="r-name">Curtosis</p>
+        <p class="r-formula">g₂ = [n(n+1)/(n−1)(n−2)(n−3)] Σ((xᵢ−x̄)/s)⁴ − 3(n−1)²/[(n−2)(n−3)]</p>
+        <p class="r-desc">Mide qué tan "puntiaguda" o "achatada" es la distribución respecto a una normal. Positivo indica colas más pesadas y pico más agudo; negativo, una forma más plana.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Demo del proyecto <a href="https://github.com/efrabuilder/estadisticas-basicas" target="_blank" rel="noopener">estadisticas-basicas</a> —
+    la misma lógica vive en <code>stats.py</code> para usar desde la línea de comandos.<br>
+    © 2026 · Diseñado y desarrollado por Efraín Sebastián Rojas Artavia
+  </footer>
+</main>
+
+<div class="hover-panel modal" id="hover-panel">
+  <p class="modal-eyebrow">Procedimiento</p>
+  <h2 id="hp-title">—</h2>
+  <p class="modal-formula" id="hp-formula">—</p>
+  <ol class="modal-steps" id="hp-steps"></ol>
+</div>
+
+<script>
+  // ---- umbral a partir del cual se usa histograma en vez de puntos individuales ----
+  const UMBRAL_HISTOGRAMA = 40;
+
+  function calcularMedia(datos){
+    return datos.reduce((a,b) => a+b, 0) / datos.length;
+  }
+
+  function calcularMediana(datos){
+    const ordenados = [...datos].sort((a,b) => a-b);
+    const n = ordenados.length;
+    const mitad = Math.floor(n/2);
+    if(n % 2 === 0){
+      return (ordenados[mitad-1] + ordenados[mitad]) / 2;
+    }
+    return ordenados[mitad];
+  }
+
+  function calcularModa(datos){
+    const conteo = new Map();
+    datos.forEach(d => conteo.set(d, (conteo.get(d) || 0) + 1));
+    const frecuenciaMax = Math.max(...conteo.values());
+    if(frecuenciaMax === 1) return [];
+    return [...conteo.entries()]
+      .filter(([_, freq]) => freq === frecuenciaMax)
+      .map(([valor]) => valor)
+      .sort((a,b) => a-b);
+  }
+
+  function calcularRango(datos){
+    return Math.max(...datos) - Math.min(...datos);
+  }
+
+  function calcularSuma(datos){
+    return datos.reduce((a,b) => a+b, 0);
+  }
+
+  // Varianza muestral: s² = Σ(xi - x̄)² / (n - 1)
+  function calcularVarianza(datos, media){
+    const n = datos.length;
+    if(n < 2) return null;
+    const sumaCuadrados = datos.reduce((acc, x) => acc + Math.pow(x - media, 2), 0);
+    return sumaCuadrados / (n - 1);
+  }
+
+  function calcularDesviacion(varianza){
+    if(varianza === null) return null;
+    return Math.sqrt(varianza);
+  }
+
+  function calcularCV(desviacion, media){
+    if(desviacion === null || media === 0) return null;
+    return (desviacion / media) * 100;
+  }
+
+  function calcularErrorTipico(desviacion, n){
+    if(desviacion === null) return null;
+    return desviacion / Math.sqrt(n);
+  }
+
+  // Coeficiente de asimetría muestral (misma fórmula que SKEW en Excel)
+  function calcularAsimetria(datos, media, desviacion){
+    const n = datos.length;
+    if(n < 3 || desviacion === null || desviacion === 0) return null;
+    const suma = datos.reduce((acc, x) => acc + Math.pow((x - media) / desviacion, 3), 0);
+    return (n / ((n - 1) * (n - 2))) * suma;
+  }
+
+  // Curtosis muestral (exceso de curtosis, misma fórmula que KURT en Excel)
+  function calcularCurtosis(datos, media, desviacion){
+    const n = datos.length;
+    if(n < 4 || desviacion === null || desviacion === 0) return null;
+    const suma = datos.reduce((acc, x) => acc + Math.pow((x - media) / desviacion, 4), 0);
+    const termino1 = (n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3));
+    const termino2 = (3 * Math.pow(n - 1, 2)) / ((n - 2) * (n - 3));
+    return termino1 * suma - termino2;
+  }
+
+  function formatearNum(n){
+    return n.toFixed(4).replace(/\.?0+$/, '') || n.toFixed(2);
+  }
+
+  // Muestra hasta 12 valores; si hay más, abrevia con "…" e indica el total
+  function listaCorta(datos){
+    if(datos.length <= 12) return datos.join(', ');
+    return `${datos.slice(0, 6).join(', ')}, … , ${datos.slice(-3).join(', ')}  (n = ${datos.length})`;
+  }
+
+  // ---- fórmulas y pasos de cada estadística, con los números reales sustituidos ----
+  const STAT_INFO = {
+    media: {
+      nombre: 'Media',
+      formula: 'x̄ = Σxᵢ / n',
+      pasos: c => [
+        `Sumamos todos los valores: ${listaCorta(c.datos)}`,
+        `Σxᵢ = ${formatearNum(c.suma)}`,
+        `Dividimos entre n = ${c.n}`,
+        `x̄ = ${formatearNum(c.suma)} / ${c.n} = ${formatearNum(c.media)}`
+      ]
+    },
+    mediana: {
+      nombre: 'Mediana',
+      formula: 'valor central',
+      pasos: c => {
+        const ordenados = [...c.datos].sort((a,b) => a-b);
+        const n = ordenados.length;
+        const mitad = Math.floor(n/2);
+        const pasos = [`Ordenamos los datos de menor a mayor: ${listaCorta(ordenados)}`];
+        if(n % 2 === 0){
+          pasos.push(`Como n = ${n} es par, tomamos los dos valores centrales (posiciones ${mitad} y ${mitad+1}): ${ordenados[mitad-1]} y ${ordenados[mitad]}`);
+          pasos.push(`Mediana = (${ordenados[mitad-1]} + ${ordenados[mitad]}) / 2 = ${formatearNum(c.mediana)}`);
+        } else {
+          pasos.push(`Como n = ${n} es impar, tomamos el valor central (posición ${mitad+1}): ${ordenados[mitad]}`);
+          pasos.push(`Mediana = ${formatearNum(c.mediana)}`);
+        }
+        return pasos;
+      }
+    },
+    moda: {
+      nombre: 'Moda',
+      formula: 'valor más frecuente',
+      pasos: c => {
+        if(!c.moda.length){
+          return [
+            'Contamos cuántas veces se repite cada valor.',
+            'Todos los valores aparecen la misma cantidad de veces, así que no hay moda.'
+          ];
+        }
+        return [
+          'Contamos cuántas veces se repite cada valor.',
+          `El valor (o valores) que más se repite: ${c.moda.join(', ')}`
+        ];
+      }
+    },
+    cuenta: {
+      nombre: 'Cuenta',
+      formula: 'n',
+      pasos: c => [
+        `Contamos los números ingresados: ${listaCorta(c.datos)}`,
+        `n = ${c.n}`
+      ]
+    },
+    suma: {
+      nombre: 'Suma',
+      formula: 'Σxᵢ',
+      pasos: c => [
+        `Sumamos todos los valores: ${listaCorta(c.datos)}`,
+        `Σxᵢ = ${formatearNum(c.suma)}`
+      ]
+    },
+    minimo: {
+      nombre: 'Mínimo',
+      formula: 'valor más bajo',
+      pasos: c => [
+        `Comparamos todos los valores: ${listaCorta(c.datos)}`,
+        `El valor más bajo es ${formatearNum(c.minimo)}`
+      ]
+    },
+    maximo: {
+      nombre: 'Máximo',
+      formula: 'valor más alto',
+      pasos: c => [
+        `Comparamos todos los valores: ${listaCorta(c.datos)}`,
+        `El valor más alto es ${formatearNum(c.maximo)}`
+      ]
+    },
+    rango: {
+      nombre: 'Rango',
+      formula: 'máximo − mínimo',
+      pasos: c => [
+        `Máximo = ${formatearNum(c.maximo)}`,
+        `Mínimo = ${formatearNum(c.minimo)}`,
+        `Rango = ${formatearNum(c.maximo)} − ${formatearNum(c.minimo)} = ${formatearNum(c.rango)}`
+      ]
+    },
+    varianza: {
+      nombre: 'Varianza (s²)',
+      formula: 's² = Σ(xᵢ − x̄)² / (n − 1)',
+      pasos: c => {
+        if(c.varianza === null) return ['Se necesitan al menos 2 datos para calcular la varianza.'];
+        const sumaCuadrados = c.varianza * (c.n - 1);
+        return [
+          `Media: x̄ = ${formatearNum(c.media)}`,
+          `Calculamos (xᵢ − x̄)² para cada dato y las sumamos: Σ(xᵢ − x̄)² = ${formatearNum(sumaCuadrados)}`,
+          `Dividimos entre n − 1 = ${c.n - 1}`,
+          `s² = ${formatearNum(sumaCuadrados)} / ${c.n - 1} = ${formatearNum(c.varianza)}`
+        ];
+      }
+    },
+    desviacion: {
+      nombre: 'Desv. estándar (s)',
+      formula: 's = √s²',
+      pasos: c => {
+        if(c.desviacion === null) return ['Se necesitan al menos 2 datos para calcular la desviación estándar.'];
+        return [
+          `Varianza: s² = ${formatearNum(c.varianza)}`,
+          `Sacamos la raíz cuadrada`,
+          `s = √${formatearNum(c.varianza)} = ${formatearNum(c.desviacion)}`
+        ];
+      }
+    },
+    errortipico: {
+      nombre: 'Error típico',
+      formula: 'EE = s / √n',
+      pasos: c => {
+        if(c.errorTipico === null) return ['Se necesitan al menos 2 datos para calcular el error típico.'];
+        return [
+          `Desv. estándar: s = ${formatearNum(c.desviacion)}`,
+          `n = ${c.n}, así que √n = ${formatearNum(Math.sqrt(c.n))}`,
+          `EE = ${formatearNum(c.desviacion)} / ${formatearNum(Math.sqrt(c.n))} = ${formatearNum(c.errorTipico)}`
+        ];
+      }
+    },
+    cv: {
+      nombre: 'Coef. de variación',
+      formula: 'CV = (s / x̄) × 100',
+      pasos: c => {
+        if(c.cv === null) return ['No se puede calcular: se necesitan al menos 2 datos y la media no puede ser 0.'];
+        return [
+          `Desv. estándar: s = ${formatearNum(c.desviacion)}`,
+          `Media: x̄ = ${formatearNum(c.media)}`,
+          `CV = (${formatearNum(c.desviacion)} / ${formatearNum(c.media)}) × 100 = ${formatearNum(c.cv)}%`
+        ];
+      }
+    },
+    asimetria: {
+      nombre: 'Coef. de asimetría',
+      formula: 'g₁ = [n / ((n−1)(n−2))] × Σ((xᵢ−x̄)/s)³',
+      pasos: c => {
+        if(c.asimetria === null) return ['Se necesitan al menos 3 datos, y la desviación estándar no puede ser 0.'];
+        return [
+          `Media: x̄ = ${formatearNum(c.media)}, desv. estándar: s = ${formatearNum(c.desviacion)}`,
+          `Para cada dato calculamos ((xᵢ − x̄) / s)³ y sumamos los resultados`,
+          `Multiplicamos esa suma por n / ((n−1)(n−2)), con n = ${c.n}`,
+          `g₁ = ${formatearNum(c.asimetria)}`
+        ];
+      }
+    },
+    curtosis: {
+      nombre: 'Curtosis',
+      formula: 'g₂ = [n(n+1)/((n−1)(n−2)(n−3))] × Σ((xᵢ−x̄)/s)⁴ − 3(n−1)²/((n−2)(n−3))',
+      pasos: c => {
+        if(c.curtosis === null) return ['Se necesitan al menos 4 datos, y la desviación estándar no puede ser 0.'];
+        return [
+          `Media: x̄ = ${formatearNum(c.media)}, desv. estándar: s = ${formatearNum(c.desviacion)}`,
+          `Para cada dato calculamos ((xᵢ − x̄) / s)⁴ y sumamos los resultados`,
+          `Aplicamos el ajuste muestral con n = ${c.n} y le restamos el término de corrección`,
+          `g₂ = ${formatearNum(c.curtosis)}`
+        ];
+      }
+    }
+  };
+
+  let contextoActual = null;
+  let panelPinned = false;
+  let panelStatActual = null;
+  let panelTimeout = null;
+
+  function idDeTarjeta(cardEl){
+    const valorEl = cardEl.querySelector('.value[id^="val-"]');
+    return valorEl ? valorEl.id.replace('val-', '') : null;
+  }
+
+  function posicionarPanel(cardEl){
+    const panel = document.getElementById('hover-panel');
+    const rectCard = cardEl.getBoundingClientRect();
+    const rectPanel = panel.getBoundingClientRect();
+    const margen = 10;
+
+    let top = rectCard.bottom + margen;
+    if(top + rectPanel.height > window.innerHeight - 16){
+      top = rectCard.top - rectPanel.height - margen;
+    }
+    top = Math.max(16, top);
+
+    let left = rectCard.left + rectCard.width / 2 - rectPanel.width / 2;
+    left = Math.min(Math.max(left, 16), window.innerWidth - rectPanel.width - 16);
+
+    panel.style.top = `${top}px`;
+    panel.style.left = `${left}px`;
+  }
+
+  function mostrarPanel(cardEl, statKey){
+    const info = STAT_INFO[statKey];
+    if(!info || !contextoActual) return;
+    panelStatActual = statKey;
+    document.getElementById('hp-title').textContent = info.nombre;
+    document.getElementById('hp-formula').textContent = info.formula;
+    const lista = document.getElementById('hp-steps');
+    lista.innerHTML = '';
+    info.pasos(contextoActual).forEach(paso => {
+      const li = document.createElement('li');
+      li.textContent = paso;
+      lista.appendChild(li);
+    });
+    document.getElementById('hover-panel').classList.add('visible');
+    posicionarPanel(cardEl);
+    document.querySelectorAll('.card.interactiva').forEach(c => c.classList.remove('activa'));
+    cardEl.classList.add('activa');
+  }
+
+  function ocultarPanel(){
+    if(panelPinned) return;
+    document.getElementById('hover-panel').classList.remove('visible');
+    document.querySelectorAll('.card.interactiva').forEach(c => c.classList.remove('activa'));
+    panelStatActual = null;
+  }
+
+  function configurarTarjetasInteractivas(){
+    const panel = document.getElementById('hover-panel');
+
+    document.querySelectorAll('.card').forEach(card => {
+      const statKey = idDeTarjeta(card);
+      if(!statKey || !STAT_INFO[statKey]) return;
+      card.classList.add('interactiva');
+
+      // pasar el mouse muestra el procedimiento
+      card.addEventListener('mouseenter', () => {
+        clearTimeout(panelTimeout);
+        mostrarPanel(card, statKey);
+      });
+      card.addEventListener('mouseleave', () => {
+        panelTimeout = setTimeout(ocultarPanel, 150);
+      });
+
+      // en pantallas táctiles, un toque fija el panel abierto
+      card.addEventListener('click', () => {
+        if(panelPinned && panelStatActual === statKey){
+          panelPinned = false;
+          ocultarPanel();
+        } else {
+          panelPinned = true;
+          mostrarPanel(card, statKey);
+        }
+      });
+    });
+
+    panel.addEventListener('mouseenter', () => clearTimeout(panelTimeout));
+    panel.addEventListener('mouseleave', () => {
+      panelTimeout = setTimeout(ocultarPanel, 150);
+    });
+
+    document.addEventListener('click', e => {
+      if(panelPinned && !e.target.closest('.card.interactiva') && !e.target.closest('#hover-panel')){
+        panelPinned = false;
+        ocultarPanel();
+      }
+    });
+
+    window.addEventListener('scroll', () => {
+      panelPinned = false;
+      ocultarPanel();
+    }, true);
+  }
+
+  function parseInput(texto){
+    const limpio = texto.replace(/,/g, ' ').trim();
+    if(!limpio) return null;
+    const partes = limpio.split(/\s+/);
+    const numeros = partes.map(Number);
+    if(numeros.some(n => Number.isNaN(n))) return null;
+    return numeros;
+  }
+
+  // agrupa los datos en bins de igual ancho para el histograma
+  function calcularHistograma(datos, numBins){
+    const min = Math.min(...datos);
+    const max = Math.max(...datos);
+    const rango = (max - min) || 1;
+    const anchoBin = rango / numBins;
+    const bins = Array.from({ length: numBins }, (_, i) => ({
+      inicio: min + i * anchoBin,
+      fin: min + (i + 1) * anchoBin,
+      cuenta: 0
+    }));
+    datos.forEach(v => {
+      let idx = Math.floor((v - min) / anchoBin);
+      if(idx >= numBins) idx = numBins - 1;
+      if(idx < 0) idx = 0;
+      bins[idx].cuenta++;
+    });
+    return bins;
+  }
+
+  function numeroDeBins(n){
+    return Math.min(25, Math.max(8, Math.round(Math.sqrt(n))));
+  }
+
+  function dibujarPlot(datos, media, mediana, moda){
+    const svg = document.getElementById('plot');
+    const plotLabel = document.getElementById('plot-label');
+    const W = 640, H = 200;
+    const padX = 40;
+    const baseY = 165;
+    const topLimit = 45; // espacio reservado para etiquetas de media/mediana
+
+    const min = Math.min(...datos);
+    const max = Math.max(...datos);
+    const rango = max - min || 1;
+    const margen = rango * 0.06;
+    const escX = v => padX + ((v - (min - margen)) / (rango + margen*2)) * (W - padX*2);
+
+    let svgContent = '';
+
+    // eje
+    svgContent += `<line class="axis-line" x1="${padX}" y1="${baseY}" x2="${W-padX}" y2="${baseY}"></line>`;
+
+    // marcas del eje
+    const numTicks = 5;
+    for(let i=0; i<=numTicks; i++){
+      const val = (min - margen) + (i/numTicks) * (rango + margen*2);
+      const x = escX(val);
+      svgContent += `<line class="axis-line" x1="${x}" y1="${baseY}" x2="${x}" y2="${baseY+6}"></line>`;
+      svgContent += `<text class="tick" x="${x}" y="${baseY+20}" text-anchor="middle">${val.toFixed(1)}</text>`;
+    }
+
+    // línea de mediana
+    const xMediana = escX(mediana);
+    svgContent += `<line class="median-line" x1="${xMediana}" y1="20" x2="${xMediana}" y2="${baseY}"></line>`;
+    svgContent += `<text class="legend" x="${xMediana}" y="14" text-anchor="middle">mediana</text>`;
+
+    // marcador de media (triángulo)
+    const xMedia = escX(media);
+    svgContent += `<path class="mean-marker" d="M ${xMedia-6} 30 L ${xMedia+6} 30 L ${xMedia} 40 Z"></path>`;
+    svgContent += `<text class="legend" x="${xMedia}" y="24" text-anchor="middle">media</text>`;
+
+    const usarHistograma = datos.length > UMBRAL_HISTOGRAMA;
+    let hoverTargets = [];
+
+    if(usarHistograma){
+      plotLabel.textContent = `DISTRIBUCIÓN — histograma agrupado (n = ${datos.length})`;
+
+      const numBins = numeroDeBins(datos.length);
+      const bins = calcularHistograma(datos, numBins);
+      const maxCuenta = Math.max(...bins.map(b => b.cuenta));
+      const alturaDisponible = baseY - topLimit;
+
+      bins.forEach(bin => {
+        if(bin.cuenta === 0) return;
+        const x1 = escX(bin.inicio);
+        const x2 = escX(bin.fin);
+        const anchoBarra = Math.max(1, (x2 - x1) - 2);
+        const altura = (bin.cuenta / maxCuenta) * alturaDisponible;
+        const y = baseY - altura;
+        const esBinModa = bin.cuenta === maxCuenta;
+        svgContent += `<rect class="bar${esBinModa ? ' mode-bin' : ''}" x="${x1}" y="${y}" width="${anchoBarra}" height="${altura}" data-inicio="${bin.inicio}" data-fin="${bin.fin}" data-cuenta="${bin.cuenta}"></rect>`;
+      });
+
+      svg.innerHTML = svgContent;
+      hoverTargets = svg.querySelectorAll('.bar');
+
+    } else {
+      plotLabel.textContent = 'DISTRIBUCIÓN';
+
+      const conteoPos = new Map();
+      const puntos = datos.map(v => {
+        const nivel = conteoPos.get(v) || 0;
+        conteoPos.set(v, nivel + 1);
+        return { v, nivel };
+      });
+
+      const radio = 8;
+      const espacioDefault = 18;
+      const alturaDisponible = baseY - topLimit - radio*2;
+      const maxNivel = Math.max(0, ...[...conteoPos.values()].map(c => c - 1));
+      const espacioVertical = maxNivel > 0
+        ? Math.min(espacioDefault, alturaDisponible / (maxNivel + 1))
+        : espacioDefault;
+
+      puntos.forEach(p => {
+        const x = escX(p.v);
+        const y = baseY - radio - (p.nivel * espacioVertical);
+        const esModa = moda.includes(p.v);
+        svgContent += `<circle class="dot${esModa ? ' mode' : ''}" cx="${x}" cy="${y}" r="${radio}" data-valor="${p.v}"></circle>`;
+      });
+
+      svg.innerHTML = svgContent;
+      hoverTargets = svg.querySelectorAll('.dot');
+    }
+
+    // eventos de tooltip
+    const tooltip = document.getElementById('tooltip');
+    const wrap = document.getElementById('plot-wrap');
+
+    hoverTargets.forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        if(usarHistograma){
+          const inicio = Number(el.getAttribute('data-inicio')).toFixed(1);
+          const fin = Number(el.getAttribute('data-fin')).toFixed(1);
+          const cuenta = el.getAttribute('data-cuenta');
+          tooltip.textContent = `${inicio} – ${fin}: ${cuenta} datos`;
+        } else {
+          tooltip.textContent = el.getAttribute('data-valor');
+        }
+        tooltip.classList.add('visible');
+      });
+
+      el.addEventListener('mousemove', (e) => {
+        const wrapRect = wrap.getBoundingClientRect();
+        const x = e.clientX - wrapRect.left;
+        const y = e.clientY - wrapRect.top;
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y - 12}px`;
+      });
+
+      el.addEventListener('mouseleave', () => {
+        tooltip.classList.remove('visible');
+      });
+    });
+  }
+
+  function actualizar(){
+    const texto = document.getElementById('input-datos').value;
+    const errorMsg = document.getElementById('error-msg');
+    const nCount = document.getElementById('n-count');
+    const datos = parseInput(texto);
+
+    if(!datos){
+      errorMsg.style.display = 'block';
+      nCount.textContent = '';
+      return;
+    }
+    errorMsg.style.display = 'none';
+    nCount.textContent = `n = ${datos.length} dato${datos.length === 1 ? '' : 's'}`;
+
+    const media = calcularMedia(datos);
+    const mediana = calcularMediana(datos);
+    const moda = calcularModa(datos);
+    const rango = calcularRango(datos);
+    const varianza = calcularVarianza(datos, media);
+    const desviacion = calcularDesviacion(varianza);
+    const cv = calcularCV(desviacion, media);
+    const errorTipico = calcularErrorTipico(desviacion, datos.length);
+    const asimetria = calcularAsimetria(datos, media, desviacion);
+    const curtosis = calcularCurtosis(datos, media, desviacion);
+    const suma = calcularSuma(datos);
+    const minimo = Math.min(...datos);
+    const maximo = Math.max(...datos);
+
+    document.getElementById('val-media').textContent = formatearNum(media);
+    document.getElementById('val-mediana').textContent = formatearNum(mediana);
+    document.getElementById('val-moda').textContent = moda.length ? moda.join(', ') : 'no hay';
+
+    document.getElementById('val-cuenta').textContent = datos.length;
+    document.getElementById('val-suma').textContent = formatearNum(suma);
+    document.getElementById('val-minimo').textContent = formatearNum(minimo);
+    document.getElementById('val-maximo').textContent = formatearNum(maximo);
+
+    document.getElementById('val-rango').textContent = formatearNum(rango);
+    document.getElementById('val-varianza').textContent = varianza === null ? 'n/a' : formatearNum(varianza);
+    document.getElementById('val-desviacion').textContent = desviacion === null ? 'n/a' : formatearNum(desviacion);
+    document.getElementById('val-errortipico').textContent = errorTipico === null ? 'n/a' : formatearNum(errorTipico);
+    document.getElementById('val-cv').textContent = cv === null ? 'n/a' : formatearNum(cv) + '%';
+
+    document.getElementById('val-asimetria').textContent = asimetria === null ? 'n/a' : formatearNum(asimetria);
+    document.getElementById('val-curtosis').textContent = curtosis === null ? 'n/a' : formatearNum(curtosis);
+
+    // guardamos el contexto para poder generar el procedimiento paso a paso
+    contextoActual = {
+      datos, n: datos.length, media, mediana, moda, suma, minimo, maximo,
+      rango, varianza, desviacion, errorTipico, cv, asimetria, curtosis
+    };
+
+    dibujarPlot(datos, media, mediana, moda);
+  }
+
+  document.getElementById('btn-calcular').addEventListener('click', actualizar);
+  document.getElementById('input-datos').addEventListener('keydown', e => {
+    if(e.key === 'Enter') actualizar();
+  });
+
+  configurarTarjetasInteractivas();
+  actualizar();
+</script>
+</body>
+</html>
